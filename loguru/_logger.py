@@ -787,7 +787,7 @@ class Logger:
 
         if isinstance(sink, (str, PathLike)):
             path = sink
-            name = "'%s'" % path
+            name = f"'{path}'"
 
             if colorize is None:
                 colorize = False
@@ -862,17 +862,19 @@ class Logger:
             terminator = "\n"
             exception_prefix = ""
         else:
-            raise TypeError("Cannot log to objects of type '%s'" % type(sink).__name__)
+            raise TypeError(f"Cannot log to objects of type '{type(sink).__name__}'")
 
         if kwargs:
-            raise TypeError("add() got an unexpected keyword argument '%s'" % next(iter(kwargs)))
+            raise TypeError(
+                f"add() got an unexpected keyword argument '{next(iter(kwargs))}'"
+            )
 
         if filter is None:
             filter_func = None
         elif filter == "":
             filter_func = _filters.filter_none
         elif isinstance(filter, str):
-            parent = filter + "."
+            parent = f"{filter}."
             length = len(parent)
             filter_func = functools.partial(_filters.filter_by_name, parent=parent, length=length)
         elif isinstance(filter, dict):
@@ -922,8 +924,7 @@ class Logger:
             filter_func = filter
         else:
             raise TypeError(
-                "Invalid filter, it should be a function, a string or a dict, not: '%s'"
-                % type(filter).__name__
+                f"Invalid filter, it should be a function, a string or a dict, not: '{type(filter).__name__}'"
             )
 
         if isinstance(level, str):
@@ -932,8 +933,7 @@ class Logger:
             levelno = level
         else:
             raise TypeError(
-                "Invalid level, it should be an integer or a string, not: '%s'"
-                % type(level).__name__
+                f"Invalid level, it should be an integer or a string, not: '{type(level).__name__}'"
             )
 
         if levelno < 0:
@@ -960,8 +960,7 @@ class Logger:
             is_formatter_dynamic = True
         else:
             raise TypeError(
-                "Invalid format, it should be a string or a function, not: '%s'"
-                % type(format).__name__
+                f"Invalid format, it should be a string or a function, not: '{type(format).__name__}'"
             )
 
         if not isinstance(encoding, str):
@@ -1044,11 +1043,7 @@ class Logger:
             if handler_id is not None and handler_id not in handlers:
                 raise ValueError("There is no existing handler with id %d" % handler_id) from None
 
-            if handler_id is None:
-                handler_ids = list(handlers.keys())
-            else:
-                handler_ids = [handler_id]
-
+            handler_ids = list(handlers.keys()) if handler_id is None else [handler_id]
             for handler_id in handler_ids:
                 handler = handlers.pop(handler_id)
 
@@ -1568,25 +1563,26 @@ class Logger:
         """
         if not isinstance(name, str):
             raise TypeError(
-                "Invalid level name, it should be a string, not: '%s'" % type(name).__name__
+                f"Invalid level name, it should be a string, not: '{type(name).__name__}'"
             )
 
         if no is color is icon is None:
             try:
                 return self._core.levels[name]
             except KeyError:
-                raise ValueError("Level '%s' does not exist" % name) from None
+                raise ValueError(f"Level '{name}' does not exist") from None
 
         if name not in self._core.levels:
             if no is None:
                 raise ValueError(
-                    "Level '%s' does not exist, you have to create it by specifying a level no"
-                    % name
+                    f"Level '{name}' does not exist, you have to create it by specifying a level no"
                 )
             else:
                 old_color, old_icon = "", " "
         elif no is not None:
-            raise TypeError("Level '%s' already exists, you can't update its severity no" % name)
+            raise TypeError(
+                f"Level '{name}' already exists, you can't update its severity no"
+            )
         else:
             _, no, old_color, old_icon = self.level(name)
 
@@ -1598,7 +1594,7 @@ class Logger:
 
         if not isinstance(no, int):
             raise TypeError(
-                "Invalid level no, it should be an integer, not: '%s'" % type(no).__name__
+                f"Invalid level no, it should be an integer, not: '{type(no).__name__}'"
             )
 
         if no < 0:
@@ -1755,9 +1751,9 @@ class Logger:
         return [self.add(**params) for params in handlers]
 
     def _change_activation(self, name, status):
-        if not (name is None or isinstance(name, str)):
+        if name is not None and not isinstance(name, str):
             raise TypeError(
-                "Invalid name, it should be a string (or None), not: '%s'" % type(name).__name__
+                f"Invalid name, it should be a string (or None), not: '{type(name).__name__}'"
             )
 
         with self._core.lock:
@@ -1779,7 +1775,7 @@ class Logger:
             ]
 
             parent_status = next((s for n, s in activation_list if name[: len(n)] == n), None)
-            if parent_status != status and not (name == "" and status is True):
+            if parent_status != status and (name != "" or status is not True):
                 activation_list.append((name, status))
 
                 def modules_depth(x):
@@ -1788,14 +1784,14 @@ class Logger:
                 activation_list.sort(key=modules_depth, reverse=True)
 
             for n in enabled:
-                if n is not None and (n + ".")[: len(name)] == name:
+                if n is not None and f"{n}."[: len(name)] == name:
                     enabled[n] = status
 
             self._core.activation_list = activation_list
             self._core.enabled = enabled
 
     @staticmethod
-    def parse(file, pattern, *, cast={}, chunk=2**16):  # noqa: B006
+    def parse(file, pattern, *, cast={}, chunk=2**16):    # noqa: B006
         """Parse raw logs and extract each entry as a |dict|.
 
         The logging format has to be specified as the regex ``pattern``, it will then be
@@ -1850,8 +1846,7 @@ class Logger:
             fileobj = file
         else:
             raise TypeError(
-                "Invalid file, it should be a string path or a file object, not: '%s'"
-                % type(file).__name__
+                f"Invalid file, it should be a string path or a file object, not: '{type(file).__name__}'"
             )
 
         if isinstance(cast, dict):
@@ -1865,15 +1860,14 @@ class Logger:
             cast_function = cast
         else:
             raise TypeError(
-                "Invalid cast, it should be a function or a dict, not: '%s'" % type(cast).__name__
+                f"Invalid cast, it should be a function or a dict, not: '{type(cast).__name__}'"
             )
 
         try:
             regex = re.compile(pattern)
         except TypeError:
             raise TypeError(
-                "Invalid pattern, it should be a string or a compiled regex, not: '%s'"
-                % type(pattern).__name__
+                f"Invalid pattern, it should be a string or a compiled regex, not: '{type(pattern).__name__}'"
             ) from None
 
         matches = Logger._find_iter(fileobj, regex, chunk)
@@ -1914,11 +1908,10 @@ class Logger:
             level_id, level_name, level_no, level_icon = core.levels_lookup[level]
         except (KeyError, TypeError):
             if isinstance(level, str):
-                raise ValueError("Level '%s' does not exist" % level) from None
+                raise ValueError(f"Level '{level}' does not exist") from None
             if not isinstance(level, int):
                 raise TypeError(
-                    "Invalid level, it should be an integer or a string, not: '%s'"
-                    % type(level).__name__
+                    f"Invalid level, it should be an integer or a string, not: '{type(level).__name__}'"
                 ) from None
             if level < 0:
                 raise ValueError(
@@ -1951,7 +1944,7 @@ class Logger:
                 if not status:
                     return
             else:
-                dotted_name = name + "."
+                dotted_name = f"{name}."
                 for dotted_module_name, status in core.activation_list:
                     if dotted_name[: len(dotted_module_name)] == dotted_module_name:
                         if status:

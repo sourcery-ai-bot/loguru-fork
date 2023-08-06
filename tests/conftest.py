@@ -51,19 +51,16 @@ def parse(text, *, strip=False, strict=True):
     parser.feed(text)
     tokens = parser.done(strict=strict)
 
-    if strip:
-        return parser.strip(tokens)
-    else:
-        return parser.colorize(tokens, "")
+    return parser.strip(tokens) if strip else parser.colorize(tokens, "")
 
 
 def check_dir(dir, *, files=None, size=None):
     actual_files = set(dir.iterdir())
-    seen = set()
     if size is not None:
         assert len(actual_files) == size
     if files is not None:
         assert len(actual_files) == len(files)
+        seen = set()
         for name, content in files:
             filepath = dir / name
             assert filepath in actual_files
@@ -206,12 +203,9 @@ def freeze_time(monkeypatch):
         # the optional "tz_offset" argument.
         if isinstance(date, str):
             for accepted_format in ["%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S.%f"]:
-                try:
+                with contextlib.suppress(ValueError):
                     date = datetime.datetime.strptime(date, accepted_format)
                     break
-                except ValueError:
-                    pass
-
         if not isinstance(date, datetime.datetime) or date.tzinfo is not None:
             raise ValueError("Unsupported date provided")
 

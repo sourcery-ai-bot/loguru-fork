@@ -17,12 +17,12 @@ def generate_rename_path(root, ext, creation_time):
     creation_datetime = datetime.datetime.fromtimestamp(creation_time)
     date = FileDateFormatter(creation_datetime)
 
-    renamed_path = "{}.{}{}".format(root, date, ext)
+    renamed_path = f"{root}.{date}{ext}"
     counter = 1
 
     while os.path.exists(renamed_path):
         counter += 1
-        renamed_path = "{}.{}.{}{}".format(root, date, counter, ext)
+        renamed_path = f"{root}.{date}.{counter}{ext}"
 
     return renamed_path
 
@@ -56,7 +56,7 @@ class Compression:
 
     @staticmethod
     def compression(path_in, ext, compress_function):
-        path_out = "{}{}".format(path_in, ext)
+        path_out = f"{path_in}{ext}"
 
         if os.path.exists(path_out):
             creation_time = get_ctime(path_out)
@@ -305,9 +305,9 @@ class FileSink:
         root, ext = os.path.splitext(escaped)
 
         if not ext:
-            return [escaped, escaped + ".*"]
+            return [escaped, f"{escaped}.*"]
 
-        return [escaped, escaped + ".*", root + ".*" + ext, root + ".*" + ext + ".*"]
+        return [escaped, f"{escaped}.*", f"{root}.*{ext}", f"{root}.*{ext}.*"]
 
     @staticmethod
     def _make_rotation_function(rotation):
@@ -332,7 +332,7 @@ class FileSink:
                     time = datetime.time(0, 0, 0)
                 step_forward = partial(Rotation.forward_weekday, weekday=day)
                 return Rotation.RotationTime(step_forward, time)
-            raise ValueError("Cannot parse rotation from: '%s'" % rotation)
+            raise ValueError(f"Cannot parse rotation from: '{rotation}'")
         elif isinstance(rotation, (numbers.Real, decimal.Decimal)):
             return partial(Rotation.rotation_size, size_limit=rotation)
         elif isinstance(rotation, datetime.time):
@@ -344,7 +344,7 @@ class FileSink:
             return rotation
         else:
             raise TypeError(
-                "Cannot infer rotation for objects of type: '%s'" % type(rotation).__name__
+                f"Cannot infer rotation for objects of type: '{type(rotation).__name__}'"
             )
 
     @staticmethod
@@ -354,7 +354,7 @@ class FileSink:
         elif isinstance(retention, str):
             interval = string_parsers.parse_duration(retention)
             if interval is None:
-                raise ValueError("Cannot parse retention from: '%s'" % retention)
+                raise ValueError(f"Cannot parse retention from: '{retention}'")
             return FileSink._make_retention_function(interval)
         elif isinstance(retention, int):
             return partial(Retention.retention_count, number=retention)
@@ -364,7 +364,7 @@ class FileSink:
             return retention
         else:
             raise TypeError(
-                "Cannot infer retention for objects of type: '%s'" % type(retention).__name__
+                f"Cannot infer retention for objects of type: '{type(retention).__name__}'"
             )
 
     @staticmethod
@@ -426,12 +426,14 @@ class FileSink:
                     compression=zipfile.ZIP_DEFLATED,
                 )
             else:
-                raise ValueError("Invalid compression format: '%s'" % ext)
+                raise ValueError(f"Invalid compression format: '{ext}'")
 
-            return partial(Compression.compression, ext="." + ext, compress_function=compress)
+            return partial(
+                Compression.compression, ext=f".{ext}", compress_function=compress
+            )
         elif callable(compression):
             return compression
         else:
             raise TypeError(
-                "Cannot infer compression for objects of type: '%s'" % type(compression).__name__
+                f"Cannot infer compression for objects of type: '{type(compression).__name__}'"
             )

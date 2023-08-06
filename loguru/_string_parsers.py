@@ -20,10 +20,7 @@ class Frequencies:
 
     @staticmethod
     def monthly(t):
-        if t.month == 12:
-            y, m = t.year + 1, 1
-        else:
-            y, m = t.year, t.month + 1
+        y, m = (t.year + 1, 1) if t.month == 12 else (t.year, t.month + 1)
         return t.replace(year=y, month=m, day=1, hour=0, minute=0, second=0, microsecond=0)
 
     @staticmethod
@@ -46,7 +43,7 @@ def parse_size(size):
     try:
         s = float(s)
     except ValueError as e:
-        raise ValueError("Invalid float value while parsing size: '%s'" % s) from e
+        raise ValueError(f"Invalid float value while parsing size: '{s}'") from e
 
     u = "kmgtpezy".index(u.lower()) + 1 if u else 0
     i = 1024 if i else 1000
@@ -72,7 +69,7 @@ def parse_duration(duration):
         ("us|microseconds?", 0.000001),
     ]
 
-    if not re.fullmatch(reg + "+", duration, flags=re.I):
+    if not re.fullmatch(f"{reg}+", duration, flags=re.I):
         return None
 
     seconds = 0
@@ -81,12 +78,16 @@ def parse_duration(duration):
         try:
             value = float(value)
         except ValueError as e:
-            raise ValueError("Invalid float value while parsing duration: '%s'" % value) from e
+            raise ValueError(
+                f"Invalid float value while parsing duration: '{value}'"
+            ) from e
 
         try:
             unit = next(u for r, u in units if re.fullmatch(r, unit, flags=re.I))
         except StopIteration:
-            raise ValueError("Invalid unit value while parsing duration: '%s'" % unit) from None
+            raise ValueError(
+                f"Invalid unit value while parsing duration: '{unit}'"
+            ) from None
 
         seconds += value * unit
 
@@ -154,7 +155,7 @@ def parse_time(time):
         else:
             return dt.time()
 
-    raise ValueError("Unrecognized format while parsing time: '%s'" % time)
+    raise ValueError(f"Unrecognized format while parsing time: '{time}'")
 
 
 def parse_daytime(daytime):
@@ -172,16 +173,13 @@ def parse_daytime(daytime):
         if match and day is None:
             raise ValueError
     except ValueError as e:
-        raise ValueError("Invalid day while parsing daytime: '%s'" % day) from e
+        raise ValueError(f"Invalid day while parsing daytime: '{day}'") from e
 
     try:
         time = parse_time(time)
         if match and time is None:
             raise ValueError
     except ValueError as e:
-        raise ValueError("Invalid time while parsing daytime: '%s'" % time) from e
+        raise ValueError(f"Invalid time while parsing daytime: '{time}'") from e
 
-    if day is None and time is None:
-        return None
-
-    return day, time
+    return None if day is None and time is None else (day, time)

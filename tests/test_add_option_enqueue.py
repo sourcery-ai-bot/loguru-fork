@@ -50,7 +50,7 @@ def test_enqueue():
 
     logger.add(sink, format="{message}", enqueue=True)
     logger.debug("Test")
-    assert len(x) == 0
+    assert not x
     logger.complete()
     assert len(x) == 1
     assert x[0] == "Test\n"
@@ -70,7 +70,7 @@ def test_enqueue_with_exception():
     except ZeroDivisionError:
         logger.exception("Error")
 
-    assert len(x) == 0
+    assert not x
     logger.complete()
     assert len(x) == 1
     lines = x[0].splitlines()

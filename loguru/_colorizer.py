@@ -175,11 +175,7 @@ class AnsiParser:
 
     @staticmethod
     def strip(tokens):
-        output = ""
-        for type_, value in tokens:
-            if type_ == TokenType.TEXT:
-                output += value
-        return output
+        return "".join(value for type_, value in tokens if type_ == TokenType.TEXT)
 
     @staticmethod
     def colorize(tokens, ansi_level):
@@ -232,16 +228,16 @@ class AnsiParser:
                 continue
 
             if markup[1] == "/":
-                if self._tags and (tag == "" or tag == self._tags[-1]):
+                if self._tags and tag in ["", self._tags[-1]]:
                     self._tags.pop()
                     self._color_tokens.pop()
                     self._tokens.append((TokenType.CLOSING, "\033[0m"))
                     self._tokens.extend(self._color_tokens)
                     continue
                 elif tag in self._tags:
-                    raise ValueError('Closing tag "%s" violates nesting rules' % markup)
+                    raise ValueError(f'Closing tag "{markup}" violates nesting rules')
                 else:
-                    raise ValueError('Closing tag "%s" has no corresponding opening tag' % markup)
+                    raise ValueError(f'Closing tag "{markup}" has no corresponding opening tag')
 
             if tag in {"lvl", "level"}:
                 token = (TokenType.LEVEL, None)
@@ -266,7 +262,9 @@ class AnsiParser:
     def done(self, *, strict=True):
         if strict and self._tags:
             faulty_tag = self._tags.pop(0)
-            raise ValueError('Opening tag "<%s>" has no corresponding closing tag' % faulty_tag)
+            raise ValueError(
+                f'Opening tag "<{faulty_tag}>" has no corresponding closing tag'
+            )
         return self._tokens
 
     def current_color_tokens(self):
@@ -427,10 +425,7 @@ class Colorizer:
 
         tokens = parser.done()
 
-        if recursive:
-            return AnsiParser.strip(tokens), auto_arg_index
-
-        return tokens
+        return (AnsiParser.strip(tokens), auto_arg_index) if recursive else tokens
 
     @staticmethod
     def _parse_without_formatting(string, *, recursion_depth=2, recursive=False):
@@ -457,9 +452,9 @@ class Colorizer:
                         messages_color_tokens.append(color_tokens)
                 field = "{%s" % field_name
                 if conversion:
-                    field += "!%s" % conversion
+                    field += f"!{conversion}"
                 if format_spec:
-                    field += ":%s" % format_spec
+                    field += f":{format_spec}"
                 field += "}"
                 parser.feed(field, raw=True)
 
